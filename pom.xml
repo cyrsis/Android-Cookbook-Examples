@@ -3,6 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<prerequisites>
+		<maven>3.1</maven>
+	</prerequisites>
 
 	<!-- Top-level POM for the Android Cookbook examples. Tries to build them all! -->
 
@@ -28,6 +31,7 @@
 
 	<modules>
 		<module>AboutInfo</module>
+		<module>AddContact</module>
 		<module>AndroidPlot</module>
 		<module>AndroidRss</module>
 		<module>AppDownloader</module>
@@ -68,7 +72,6 @@
 		<module>HelloTestingTarget</module>
 		<module>HelloTestingTestProject</module>
 		<module>HomeAppListView</module>
-		<module>HotContacts</module>
 		<module>IconizedListView</module>
 		<module>IntentsDemo</module>
 		<module>JavascriptDataDemo</module>
@@ -83,10 +86,13 @@
 		<module>MaterialDemos</module>
 		<module>MediaPlayerDemo</module>
 		<module>MediaRecorderDemo</module>
+		<module>MenuAction</module>
 		<module>NdkDemo</module>
 		<module>NotificationDemo</module>
 		<module>NumberPickers</module>
 		<module>OSMIntro</module>
+		<module>OSMOverlay</module>
+		<module>OSMTouchEvents</module>
 		<module>OpenGlDemo</module>
 		<module>OrientationChanges</module>
 		<module>PdfShare</module>
@@ -132,7 +138,7 @@
 			<dependency>
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
-				<version>4.11</version>
+				<version>4.12</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>
@@ -154,6 +160,13 @@
 						<sdk>
 							<platform>16</platform>
 						</sdk> 
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.0.2</version>
+					<configuration>
 					</configuration>
 				</plugin>
 			</plugins>

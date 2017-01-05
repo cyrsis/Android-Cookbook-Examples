@@ -1,1 +1,1 @@
-Flixel-based gaming demo
+Common code for flixel-gdx-based gaming demo.

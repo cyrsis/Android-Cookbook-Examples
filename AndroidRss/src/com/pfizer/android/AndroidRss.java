@@ -3,10 +3,17 @@ package com.pfizer.android;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.List;
 
+import com.sun.syndication.feed.synd.SyndEntry;
+import com.sun.syndication.feed.synd.SyndFeed;
+import com.sun.syndication.io.FeedException;
+import com.sun.syndication.io.SyndFeedInput;
+import com.sun.syndication.io.XmlReader;
+
 import android.app.Activity;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -19,16 +26,18 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.sun.syndication.feed.synd.SyndEntry;
-import com.sun.syndication.feed.synd.SyndFeed;
-import com.sun.syndication.io.FeedException;
-import com.sun.syndication.io.SyndFeedInput;
-import com.sun.syndication.io.XmlReader;
-
+/**
+ * Demonstrate using Rome API to parse an RSS feed
+ * @author Wagied Davies, original version
+ * @author Ian Darwin, code reorganized to use an AsyncTask instead of
+ * throwing NetworkOnMainThreadException as the original did.
+ */
 public class AndroidRss extends Activity {
+	private static final String TAG = AndroidRss.class.getSimpleName();
 	private EditText text;
 	private ListView listView;
 	private Button goButton;
+	private Button goDefaultButton;
 	private Button clearButton;
 	private ArrayAdapter<String> adapter = null;
 
@@ -43,7 +52,23 @@ public class AndroidRss extends Activity {
 			@Override
 			public void onClick(View v) {
 				String rss = text.getText().toString().trim();
-				getRSS(rss);
+				if (rss.length() == 0) {
+					return;
+				}
+				try {
+					Uri.parse(rss);
+				} catch (Exception e) {
+					Toast.makeText(AndroidRss.this, "Not a valid URL: " + rss, Toast.LENGTH_LONG).show();
+					return;
+				}
+				new RssGetter().execute(rss);
+			}
+		});
+		goDefaultButton = (Button) this.findViewById(R.id.goDefaultButton);
+		goDefaultButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				new RssGetter().execute(getString(R.string.default_feed));
 			}
 		});
 
@@ -61,9 +86,8 @@ public class AndroidRss extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long duration) {
-				Toast.makeText(
-						getApplicationContext(),
-						"Selected " + adapter.getItem(position) + " @ "
+				Toast.makeText(AndroidRss.this,
+					"Selected " + adapter.getItem(position) + " @ "
 								+ position, Toast.LENGTH_SHORT).show();
 			}
 		});
@@ -71,43 +95,44 @@ public class AndroidRss extends Activity {
 		adapter = new ArrayAdapter<String>(this, R.layout.dataview,
 				R.id.ListItemView);
 		listView.setAdapter(adapter);
-
 	}
 
-	private void getRSS(String rss) {
+	/**
+	 * The AsyncTask to do the network IO on a background thread
+	 * and the UI updating on, well, the UI thread.
+	 */
+	private class RssGetter extends AsyncTask<String, Void, List<SyndEntry>> {
 
-		URL feedUrl;
-		try {
-			Log.d("DEBUG", "Entered:" + rss);
-			feedUrl = new URL(rss);
+		@Override
+		public List<SyndEntry> doInBackground(String... rss) {
+
+			URL feedUrl;
+			try {
+				Log.d("DEBUG", "Entered:" + rss);
+				feedUrl = new URL(rss[0]);
+			} catch (MalformedURLException e) {
+				throw new RuntimeException("Invalid URL, try again");
+			}
 
 			SyndFeedInput input = new SyndFeedInput();
-			SyndFeed feed = input.build(new XmlReader(feedUrl));
-			List<SyndEntry> entries = feed.getEntries();
-			Toast.makeText(this, "#Feeds retrieved: " + entries.size(),
-					Toast.LENGTH_SHORT).show();
+			try {
+				SyndFeed feed = input.build(new XmlReader(feedUrl));
+				@SuppressWarnings("unchecked")
+				List<SyndEntry> entries = feed.getEntries();
+				Log.d(TAG, "Retrieved " + entries.size() + " entries");
+				return entries;
+			} catch (FeedException | IOException e) {
+				throw new RuntimeException("Feeding failed: " + e);
+			}
+		}
 
-			Iterator<SyndEntry> iterator = entries.listIterator();
-			while (iterator.hasNext()) {
-				SyndEntry ent = iterator.next();
+		@Override
+		public void onPostExecute(List<SyndEntry> entries) {
+			for (SyndEntry ent : entries) {
 				String title = ent.getTitle();
 				adapter.add(title);
 			}
 			adapter.notifyDataSetChanged();
-
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		} catch (FeedException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
-	}
-
-	private void clearTextFields() {
-		Log.d("DEBUG", "clearTextFields()");
-		this.text.setText("");
-	}
+	};
 }
